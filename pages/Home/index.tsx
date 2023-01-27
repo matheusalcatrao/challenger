@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Center, View, Spinner, FlatList } from "native-base";
 
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
 
 import { app } from "../../firebaseConfig";
 import { Products } from "../../components/Products";
@@ -10,15 +10,18 @@ import { SafeAreaView } from "react-native";
 
 const Home: React.FC = () => {
   const [products, setProducts] = React.useState<Array<ProductType>>([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   const listProducts = async () => {
+    setProducts([]);
+    setLoading(true);
     const firestore = getFirestore(app);
 
     const querySnapshot = await getDocs(collection(firestore, "Product"));
     querySnapshot.forEach((document) => {
       const { id } = document;
-      console.log({ id }, document.data());
-      const { title, description, price, ratting, filename } = document.data();
+      const { title, description, price, ratting, filename, type } =
+        document.data();
 
       const product: ProductType = {
         id,
@@ -27,10 +30,25 @@ const Home: React.FC = () => {
         price,
         ratting,
         filename,
+        type,
       };
 
       setProducts((old) => [...old, product]);
+      setLoading(false);
     });
+  };
+
+  const addProduct = async () => {
+    const firestore = getFirestore(app);
+
+    await addDoc(collection(firestore, "Product"), {
+      title: "morango",
+      description: "dhuashduasud",
+      price: 29.9,
+      type: "fruta",
+      ratting: 2,
+    });
+    console.log("add");
   };
 
   useEffect(() => {
@@ -47,6 +65,9 @@ const Home: React.FC = () => {
             renderItem={({ item }) => <Products {...item} />}
             extraData={(item: ProductType) => item.id}
             style={{ padding: 10 }}
+            onRefresh={() => listProducts()}
+            refreshing={loading}
+            removeClippedSubviews
           />
         </Center>
       </View>
